@@ -1,5 +1,6 @@
 (ns byf.algorithms.elo-test
   (:require [clojure.test :refer [deftest is are testing]]
+            [medley.core :as medley]
             [byf.generators :as gen]
             [byf.shared-config :as shared]
             [byf.algorithms.elo :as sut]))
@@ -23,31 +24,33 @@
 (deftest byf-rating-test
   (testing "Should be a zero sum game"
     (let [game [:a :b 0 1]
-          rs (sut/new-rankings {:a 1500 :b 1500} game)]
+          rs (sut/new-rankings {:a {:ranking 1500} :b {:ranking 1500}} game)]
       (is (== 3000
-              (apply + (vals rs))))))
+              (apply + (vals (medley/map-vals :ranking rs)))))))
 
   (testing "Order does not matter"
     (let [game [:a :b 1 0]
           game-inv [:b :a 0 1]]
 
       (is (= {:a 1516.0, :b 1484.0, :c 1500}
-             (sut/new-rankings initial-rankings game)
-             (sut/new-rankings initial-rankings game-inv))))))
+             (medley/map-vals :ranking (sut/new-rankings initial-rankings game))
+             (medley/map-vals :ranking (sut/new-rankings initial-rankings game-inv)))))))
 
 (deftest compute-rankings-test
   (testing "Passing in all the games computes in the right order returns the rankings"
     (is (= {:c 1516.0338330211207, :b 1484.736306793522, :a 1499.2298601853572}
-           (sut/compute-rankings games [:a :b :c]))))
+           (medley/map-vals :ranking
+                            (sut/compute-rankings games [:a :b :c])))))
 
   (testing "passing new players sets them up with an initial ranking"
     (is (= {:a 1499.2298601853572,
             :b 1484.736306793522,
             :c 1516.0338330211207,
             :d 1500}
-           (sut/compute-rankings games [:a :b :c :d])))))
+           (medley/map-vals :ranking
+                            (sut/compute-rankings games [:a :b :c :d]))))))
 
-(defn- avg [xs] (/ (apply + xs) (count xs)))
+(defn- avg [xs] (prn :xs xs)(/ (apply + xs) (count xs)))
 
 ;;TODO: can probably use checking instead
 (deftest average-not-changing
@@ -61,6 +64,7 @@
                    (sut/extract-players sg-norm)
                    shared/default-game-config)
                   vals
+                  (->> (map :ranking))
                   avg))))
 
     (testing "Rankings average is stable without default values"
@@ -71,4 +75,5 @@
                    {:initial-ranking 100
                     :k 5})
                   vals
+                  (->> (map :ranking))
                   avg))))))

@@ -81,7 +81,7 @@
      (reverse
       (sort-by :ranking
                (for [[k v] rankings]
-                 {:id k :ranking v}))))))
+                 {:id k :ranking (:ranking v)}))))))
 
 (defn result-str
   [game]

@@ -20,20 +20,21 @@
   ([rankings result]
    (new-rankings rankings result shared/default-game-config))
 
-  ([rankings [p1 p2 score] config]
-   (let [ra (get rankings p1)
-         rb (get rankings p2)]
-
+  ([rankings [p1 p2 score t] config]
+   (let [ra (get-in rankings [p1 :ranking])
+         rb (get-in rankings [p2 :ranking])]
      (assoc rankings
-            p1 (new-rating ra
-                           (expected (- rb ra))
-                           score
-                           config)
+            p1 {:ranking (new-rating ra
+                                     (expected (- rb ra))
+                                     score
+                                     config)
+                :last-game t}
 
-            p2 (new-rating rb
-                           (expected (- ra rb))
-                           (invert-score score)
-                           config)))))
+            p2 {:ranking (new-rating rb
+                                     (expected (- ra rb))
+                                     (invert-score score)
+                                     config)
+                :last-game t}))))
 
 ;;TODO: this should return the whole history of the rankings instead
 ;;of simply the last one??
@@ -50,7 +51,7 @@
    (initial-rankings players shared/default-game-config))
 
   ([players {:keys [initial-ranking] :as config}]
-   (zipmap players (repeat initial-ranking))))
+   (zipmap players (repeat {:ranking initial-ranking :last-game nil}))))
 
 (defn extract-players
   [games]
@@ -65,11 +66,11 @@
 
   ;;TODO: if we return both scores in one go we don't need the extra
   ;;normalizationq done above
-  [{:keys [p1 p2 p1_points p2_points]}]
+  [{:keys [p1 p2 p1_points p2_points played_at] :as game}]
   (cond
-    (= p1_points p2_points) [p1 p2 0.5]
-    (> p1_points p2_points) [p1 p2 1]
-    (> p2_points p1_points) [p1 p2 0]))
+    (= p1_points p2_points) [p1 p2 0.5 played_at]
+    (> p1_points p2_points) [p1 p2 1 played_at]
+    (> p2_points p1_points) [p1 p2 0 played_at]))
 
 (defn compute-rankings
   ([games players]
